@@ -1,36 +1,74 @@
+// =======================
+// IMPORTS
+// =======================
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
 
-// Load environment variables
+// =======================
+// CONFIG
+// =======================
 dotenv.config();
-
-// Connect MongoDB
 connectDB();
 
+// =======================
+// APP INIT
+// =======================
 const app = express();
 
-// Middlewares
-app.use(cors());
+// =======================
+// WEBHOOK (RAW BODY) – MUST BE BEFORE express.json()
+// =======================
+app.use(
+  "/api/webhook",
+  express.raw({ type: "application/json" })
+);
+
+// =======================
+// MIDDLEWARES
+// =======================
+app.use(
+  cors({
+    origin: "*", // change in production
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// JSON parser (after webhook)
 app.use(express.json());
 
-// 🔹 Test route (so you can SEE backend in browser)
+// =======================
+// ROUTES
+// =======================
+
+// Health check
 app.get("/", (req, res) => {
   res.send("Backend is running successfully 🚀");
 });
 
-// Routes
+// Auth routes
 app.use("/api/auth", require("./routes/authRoutes"));
 
-// Port
+// Admin routes
+app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/admin", require("./routes/adminUserRoutes"));
+
+// Order routes
+app.use("/api/orders", require("./routes/orderRoutes"));
+
+// Payment routes (create order, verify payment, etc.)
+app.use("/api/payment", require("./routes/paymentRoutes"));
+
+// Razorpay webhook route
+app.use("/api/webhook", require("./routes/webhookRoutes"));
+
+// =======================
+// SERVER START
+// =======================
 const PORT = process.env.PORT || 5000;
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
+  console.log(`✅ Server running on port ${PORT}`);
 });
